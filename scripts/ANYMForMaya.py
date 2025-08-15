@@ -11,7 +11,8 @@ def get_plugin_root():
 	return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 PLUGIN_ROOT = get_plugin_root()
-ICONS_DIR = os.path.join(PLUGIN_ROOT, '..', 'icons')
+ICONS_DIR = os.path.join(PLUGIN_ROOT, '..', 'res', 'icons')
+MODEL_PATH = os.path.join(PLUGIN_ROOT, '..', 'res', 'model', 'AnymModel.fbx')
 DATA_DIR = os.path.join(os.path.expanduser('~'), '.AnymForMaya')
 DEPENDENCIES_DIR = os.path.join(PLUGIN_ROOT, '..', 'dependencies')
 
@@ -74,7 +75,6 @@ def duplicate_and_rename_full_skeleton(root, suffix):
 		short_name += suffix
 		cmds.rename(jnt, short_name)
 
-
 	cmds.rename(new_root, root + suffix)
 	return root + suffix
 
@@ -88,22 +88,23 @@ def get_all_joints(root):
 			all_joints.append(jnt)
 	return all_joints
 
-def create_limb_ik_handles(ik_root, box_scale=0.04):
+def create_limb_ik_handles(ik_root, box_scale=0.05, model=False):
 	limb_chains = [
-		("LeftArm_IK",      "LeftHand_IK",      f"{ik_root}_LeftArm_IKHandle"),
-		("RightArm_IK",     "RightHand_IK",     f"{ik_root}_RightArm_IKHandle"),
-		("LeftHip_IK",      "LeftFoot_IK",      f"{ik_root}_LeftLeg_IKHandle"),
-		("RightHip_IK",     "RightFoot_IK",     f"{ik_root}_RightLeg_IKHandle")
+		("LeftArm_IK",  "LeftHand_IK",  f"{ik_root}_LeftArm_IKHandle"),
+		("RightArm_IK", "RightHand_IK", f"{ik_root}_RightArm_IKHandle"),
+		("LeftHip_IK",  "LeftFoot_IK",  f"{ik_root}_LeftLeg_IKHandle"),
+		("RightHip_IK", "RightFoot_IK", f"{ik_root}_RightLeg_IKHandle"),
 	]
 
 	ik_handles = []
 	ik_ctrls = []
+
 	for start_jnt, end_jnt, handle_name in limb_chains:
 		start_full = find_joint_in_dup(ik_root, start_jnt)
 		end_full   = find_joint_in_dup(ik_root, end_jnt)
 		if not start_full or not end_full:
 			continue
-		
+
 		ik_handle, effector = cmds.ikHandle(
 			startJoint=start_full,
 			endEffector=end_full,
@@ -112,46 +113,122 @@ def create_limb_ik_handles(ik_root, box_scale=0.04):
 		)
 		cmds.setAttr(f"{handle_name}.displayLocalAxis", 0)
 		cmds.setAttr(f"{handle_name}.displayHandle", 0)
-		
+
 		ctrl_name = handle_name.replace("IKHandle", "IKCtrl")
-		box_points = [
-			(-box_scale, -box_scale, -box_scale),
-			(-box_scale, box_scale, -box_scale),
-			(-box_scale, box_scale, box_scale),
-			(-box_scale, -box_scale, box_scale),
-			(-box_scale, -box_scale, -box_scale),
-			(box_scale, -box_scale, -box_scale),
-			(box_scale, box_scale, -box_scale),
-			(-box_scale, box_scale, -box_scale),
-			(box_scale, box_scale, -box_scale),
-			(box_scale, box_scale, box_scale),
-			(-box_scale, box_scale, box_scale),
-			(box_scale, box_scale, box_scale),
-			(box_scale, -box_scale, box_scale),
-			(-box_scale, -box_scale, box_scale),
-			(box_scale, -box_scale, box_scale),
-			(box_scale, -box_scale, -box_scale),
-		]
+		if 'leg' in ctrl_name.lower():
+			mp = 3.5
+			if model:
+				box_scale = .05
+				box_points = [
+					(-box_scale, -mp*box_scale, -box_scale),
+					(-box_scale,  2*box_scale, -box_scale),
+					(-box_scale,  2*box_scale,  box_scale),
+					(-box_scale, -.5*box_scale,box_scale),
+					(-box_scale, -mp*box_scale, -box_scale),
+					( box_scale, -mp*box_scale, -box_scale),
+					( box_scale,  2*box_scale, -box_scale),
+					(-box_scale,  2*box_scale, -box_scale),
+					( box_scale,  2*box_scale, -box_scale),
+					( box_scale,  2*box_scale,  box_scale),
+					(-box_scale,  2*box_scale,  box_scale),
+					( box_scale,  2*box_scale,  box_scale),
+					( box_scale, -.5*box_scale,box_scale),
+					(-box_scale, -.5*box_scale,box_scale),
+					( box_scale, -.5*box_scale,box_scale),
+					( box_scale, -mp*box_scale, -box_scale),
+				]
+			else:
+				box_points = [
+					(-box_scale, -mp*box_scale, -box_scale),
+					(-box_scale,  box_scale, -box_scale),
+					(-box_scale,  box_scale,  box_scale),
+					(-box_scale, -box_scale,box_scale),
+					(-box_scale, -mp*box_scale, -box_scale),
+					( box_scale, -mp*box_scale, -box_scale),
+					( box_scale,  box_scale, -box_scale),
+					(-box_scale,  box_scale, -box_scale),
+					( box_scale,  box_scale, -box_scale),
+					( box_scale,  box_scale,  box_scale),
+					(-box_scale,  box_scale,  box_scale),
+					( box_scale,  box_scale,  box_scale),
+					( box_scale, -box_scale,box_scale),
+					(-box_scale, -box_scale,box_scale),
+					( box_scale, -box_scale,box_scale),
+					( box_scale, -mp*box_scale, -box_scale),
+				]
+		elif 'left' in ctrl_name.lower():
+			if model:
+				box_scale = .07
+			box_points = [
+				(-box_scale, -box_scale, -.5*box_scale),
+				(-box_scale, box_scale, -.5*box_scale),
+				(-box_scale, box_scale, .5*box_scale),
+				(-box_scale, -box_scale, .5*box_scale),
+				(-box_scale, -box_scale, -.5*box_scale),
+				(box_scale, -.5*box_scale, -.5*box_scale),
+				(box_scale, .5*box_scale, -.5*box_scale),
+				(-box_scale, box_scale, -.5*box_scale),
+				(box_scale, .5*box_scale, -.5*box_scale),
+				(box_scale, .5*box_scale, .5*box_scale),
+				(-box_scale, box_scale, .5*box_scale),
+				(box_scale, .5*box_scale, .5*box_scale),
+				(box_scale, -.5*box_scale, .5*box_scale),
+				(-box_scale, -box_scale, .5*box_scale),
+				(box_scale, -.5*box_scale, .5*box_scale),
+				(box_scale, -.5*box_scale, -.5*box_scale),
+			]
+		else:
+			if model:
+				box_scale = .07
+			box_points = [
+				(-box_scale, -.5*box_scale, -.5*box_scale),
+				(-box_scale, .5*box_scale, -.5*box_scale),
+				(-box_scale, .5*box_scale, .5*box_scale),
+				(-box_scale, -.5*box_scale, .5*box_scale),
+				(-box_scale, -.5*box_scale, -.5*box_scale),
+				(box_scale, -box_scale, -.5*box_scale),
+				(box_scale, box_scale, -.5*box_scale),
+				(-box_scale, .5*box_scale, -.5*box_scale),
+				(box_scale, box_scale, -.5*box_scale),
+				(box_scale, box_scale, .5*box_scale),
+				(-box_scale, .5*box_scale, .5*box_scale),
+				(box_scale, box_scale, .5*box_scale),
+				(box_scale, -box_scale, .5*box_scale),
+				(-box_scale, -.5*box_scale, .5*box_scale),
+				(box_scale, -box_scale, .5*box_scale),
+				(box_scale, -box_scale, -.5*box_scale),
+			]
+
 		ik_ctrl = cmds.curve(name=ctrl_name, degree=1, point=box_points)
+		cmds.setAttr(ik_ctrl + ".overrideEnabled", 1)
+		cmds.setAttr(ik_ctrl + ".overrideColor", 12)
 		offset_grp = cmds.group(ik_ctrl, name=ctrl_name + "_offset")
-		cmds.delete(cmds.parentConstraint(ik_handle, offset_grp))
-		cmds.parentConstraint(ik_ctrl, ik_handle, maintainOffset=True)
-		for attr in ['sx', 'sy', 'sz', 'rx', 'ry', 'rz']:
+
+		cmds.delete(cmds.parentConstraint(end_full, offset_grp, mo=False))
+
+		cmds.pointConstraint(ik_ctrl, ik_handle, mo=False)
+		cmds.orientConstraint(ik_ctrl, end_full, mo=True, name=ctrl_name.replace("Ctrl","_Orient"))
+
+		if 'leg' in ctrl_name.lower():
+			cmds.xform(
+				ik_ctrl, 
+				ws=True, 
+				t = cmds.xform(find_joint_in_dup(ik_root.split('_')[0], end_jnt.split('_')[0]), q=True, ws=True, t=True)
+			)
+
+		for attr in ('sx', 'sy', 'sz'):
 			cmds.setAttr(f"{ik_ctrl}.{attr}", lock=True, keyable=False)
-		
+
 		ik_handles.append(ik_handle)
 		ik_ctrls.append(offset_grp)
 
 	return ik_handles, ik_ctrls
 
-def create_master_control(root, scale=0.1):
-	"""
-	Create a master control for the entire rig
-	"""
+def create_master_control(root, total_root, scale=0.15):
 	rig_master_grp = f"{root}_FullBodyRig_Grp"
 	
 	master_ctrl = cmds.circle(name=f"{root}_Master_Ctrl", normal=[0, 1, 0], radius=scale*2, sections=16)[0]
-	master_offset = cmds.group(master_ctrl, name=root[:-5])
+	master_offset = total_root
 	
 	root_pos = cmds.xform(root, query=True, worldSpace=True, translation=True)
 	cmds.xform(master_offset, worldSpace=True, translation=[root_pos[0], 0, root_pos[2]])
@@ -162,103 +239,190 @@ def create_master_control(root, scale=0.1):
 			cmds.parent(rig_master_grp, world=True)
 	
 	cmds.parent(root, master_ctrl)
+	cmds.parent(master_ctrl, master_offset)
 	
 	if cmds.objExists(rig_master_grp):
 		cmds.parent(rig_master_grp, master_ctrl)
-	
-	cmds.parent(master_offset, world=True)
-	
+		
 	for attr in ['sx', 'sy', 'sz']:
 		cmds.setAttr(f"{master_ctrl}.{attr}", lock=True, keyable=False)
 	
 	return master_ctrl
 
-def create_hip_control(root, scale=0.08):
-    hip_joint = None
-    for jnt in get_all_joints(root):
-        short = jnt.split("|")[-1]
-        if "Hips" in short:
-            hip_joint = jnt
-            break
-    for attr in ['t', 'r', 's']:
-        cmds.setAttr(f"{hip_joint}.{attr}x", lock=False, keyable=True)
-        cmds.setAttr(f"{hip_joint}.{attr}y", lock=False, keyable=True)
-        cmds.setAttr(f"{hip_joint}.{attr}z", lock=False, keyable=True)
+def create_fk_controls(fk_root, radius=0.025, model=False):
+	rig_tag = fk_root.split("|")[-1].replace("_FK", "")
+	ik_terminal_names = {
+		'LeftArm', 'LeftForearm', 'LeftHand',
+		'RightArm', 'RightForearm', 'RightHand',
+		'LeftHip', 'LeftKnee', 'LeftFoot', 'LeftToe',
+		'RightHip', 'RightKnee', 'RightFoot', 'RightToe'
+	}
+	radii = {
+		'Spine': .125,
+		'Spine1': .15,
+		'Spine2': .18,
+		'LeftShoulder': .08,
+		'RightShoulder': .08,
+		'LeftArm': .09,
+		'RightArm': .09,
+		'LeftHand': .04,
+		'RightHand': .04,
+		'Neck': .08,
+		'Head': .1,
+		'LeftKnee': .08,
+		'RightKnee': .08,
+	}
 
-    hip_pos = cmds.xform(hip_joint, q=True, ws=True, t=True)
+	s = 0.2 if model else 0.1 
+	h = 0.8660254037844386 * s
+	hex_pts = [
+		( s,     0.0, 0.0),
+		( 0.5*s,  h,  0.0),
+		(-0.5*s,  h,  0.0),
+		(-s,     0.0, 0.0),
+		(-0.5*s, -h,  0.0),
+		( 0.5*s, -h,  0.0),
+		( s,     0.0, 0.0),
+	]
 
-    hip_ctrl = cmds.circle(
-        name=f"{root}_Hip_Ctrl",
-        normal=[0,1,0],
-        radius=scale,
-        sections=3
-    )[0]
-    hip_offset = cmds.group(hip_ctrl, name=f"{hip_ctrl}_offset")
-    cmds.xform(hip_offset, ws=True, t=hip_pos)
-
-    cmds.parentConstraint(hip_ctrl, hip_joint, maintainOffset=True)
-
-    for a in ("sx","sy","sz"):
-        cmds.setAttr(f"{hip_ctrl}.{a}", lock=True, keyable=False)
-
-    return hip_ctrl, hip_offset
-
-def create_fk_controls(fk_root, radius=0.025):
-	fk_joints = get_all_joints(fk_root)
+	fk_joints = get_all_joints(fk_root) 
 	offset_grps = []
-	ctrl_dict = {}
-	
+	ctrl_dict = {} 
+	temp_container = cmds.group(em=True, n=f"{rig_tag}_FKCtrls_TMP_GRP")
+
 	for jnt in fk_joints:
-		if not "_tip" in jnt and not jnt.endswith(fk_root):
-			name = jnt.split("|")[-1]
-			if "Spine" in name or "Neck" in name or "Head" in name or "Hip" in name or "Knee" in name:
-				normal = [0,0,1]
-			elif "Foot" in name or "Toe" in name:
-				normal = [0,1,0]
-			elif "Hips" in name:
-				continue
-			else:
-				normal=[1,0,0]
-			
-			ctrl_name = jnt.replace("_FK", "_FKCtrl")
+		if "_tip" in jnt or jnt.endswith(fk_root):
+			continue
+
+		leaf = jnt.split("|")[-1]      
+		basename = leaf[:-3] if leaf.endswith("_FK") else leaf 
+
+		if any(k in leaf for k in ("Spine", "Neck", "Head", "Hip", "Knee")):
+			normal = [0, 0, 1]
+		elif "Foot" in leaf or "Toe" in leaf:
+			normal = [0, 1, 0]
+		else:
+			normal = [1, 0, 0]
+
+		if "Hips" in leaf:
+			ctrl_name   = f"{rig_tag}_Hips_Ctrl"
+			offset_name = f"{ctrl_name}_offset"
+			ctrl = cmds.curve(name=ctrl_name, degree=1, point=hex_pts)
+			lock_attrs = ('sx','sy','sz')
+			color = 14
+		else:
+			if model:
+				radius = radii.get(jnt.split('|')[-1][:-3], .06)
+			ctrl_name   = f"{rig_tag}_{basename}_FKCtrl"
+			offset_name = f"{ctrl_name}_offset"
 			ctrl = cmds.circle(name=ctrl_name, normal=normal, radius=radius)[0]
-			for attr in ['t', 's']:
-				cmds.setAttr(f"{ctrl}.{attr}x", lock=True, keyable=False)
-				cmds.setAttr(f"{ctrl}.{attr}y", lock=True, keyable=False)
-				cmds.setAttr(f"{ctrl}.{attr}z", lock=True, keyable=False)
+			lock_attrs = ('tx','ty','tz','sx','sy','sz')
+			color = 18
 
-			offset_grp = cmds.group(ctrl, name=ctrl_name + "_offset")
-			
-				
-			cmds.delete(cmds.parentConstraint(jnt, offset_grp))
-			ctrl_dict[jnt] = {'ctrl': ctrl, 'offset': offset_grp}
-			cmds.orientConstraint(ctrl, jnt, maintainOffset=True)
-			
-			cmds.setAttr(ctrl + ".overrideEnabled", 1)
-			cmds.setAttr(ctrl + ".overrideColor", 18)
+		offset_grp = cmds.group(ctrl, name=offset_name)
+		cmds.parent(offset_grp, temp_container)
 
-			offset_grps.append(offset_grp)
-				
-	for jnt in fk_joints:
-		if not "_tip" in jnt:
-			parent_joint = cmds.listRelatives(jnt, parent=True, fullPath=True)
-			
-			if parent_joint and parent_joint[0] in ctrl_dict:
-				parent_ctrl = ctrl_dict[parent_joint[0]]['ctrl']
-				current_offset = ctrl_dict[jnt]['offset']
-				cmds.parent(current_offset, parent_ctrl)
+		cmds.delete(cmds.parentConstraint(jnt, offset_grp))
+
+		ctrl_long   = cmds.ls(ctrl, l=True)[0]
+		offset_long = cmds.ls(offset_grp, l=True)[0]
+
+		cmds.orientConstraint(ctrl_long, jnt, maintainOffset=True)
+		
+		jnt_pos = cmds.xform(jnt, query=True, worldSpace=True, translation=True)
+		jnt_name = jnt.split('|')[-1]
+		if 'Head' in jnt_name:
+			cmds.xform(ctrl, r=True, os=True, t=[0.,-.03,.15])
+		elif 'Neck' in jnt_name:
+			cmds.xform(ctrl, r=True, os=True, t=[0.,-.03,.02])
+		elif 'Spine' in jnt_name:
+			cmds.xform(ctrl, r=True, os=True, t=[0.,-.03,0.])
+		elif 'Arm' in jnt_name:
+			cmds.xform(ctrl, r=True, os=True, t=[0.,0.,-.03])
+		elif 'Hand' in jnt_name:
+			cmds.xform(ctrl, r=True, os=True, t=[0.,0.,-.02])
+		elif 'Foot' in jnt_name or 'Toe' in jnt_name:
+			cmds.xform(ctrl, r=True, os=True, t=[0.,0.,-.02])
 	
-	return offset_grps[-1]
+		cmds.setAttr(ctrl + ".overrideEnabled", 1)
+		cmds.setAttr(ctrl + ".overrideColor", color)
+		for attr in lock_attrs:
+			cmds.setAttr(f"{ctrl}.{attr}", lock=True, keyable=False)
+
+		if "Hips" in leaf:
+			cmds.pointConstraint(ctrl_long, jnt, mo=False)
+
+			base_root = fk_root.replace("_FK", "") 
+			base_hips = find_joint_in_dup(base_root, basename)
+			if base_hips:
+				cmds.pointConstraint(ctrl_long, base_hips, mo=False)
+
+			ik_root = f"{base_root}_IK"  
+			ik_hips = find_joint_in_dup(ik_root, basename + "_IK")
+			if ik_hips:
+				cmds.pointConstraint(ctrl_long, ik_hips, mo=False)
+
+		else:
+			if basename not in ik_terminal_names:
+				base_root = fk_root.replace("_FK", "")
+				ik_root = f"{base_root}_IK"
+				ik_jnt = find_joint_in_dup(ik_root, basename + "_IK")
+				if ik_jnt:
+					cmds.delete(cmds.parentConstraint(ik_jnt, offset_long))
+					cmds.orientConstraint(ctrl_long, ik_jnt, maintainOffset=True)
+
+		ctrl_dict[jnt] = {'ctrl': ctrl_long, 'offset': offset_long}
+		offset_grps.append(offset_long)
+
+	for jnt in fk_joints:
+		if "_tip" in jnt:
+			continue
+		parent_joint = cmds.listRelatives(jnt, parent=True, fullPath=True)
+		if parent_joint and parent_joint[0] in ctrl_dict and jnt in ctrl_dict:
+			parent_ctrl   = ctrl_dict[parent_joint[0]]['ctrl']
+			current_offset = ctrl_dict[jnt]['offset']
+			cmds.parent(current_offset, parent_ctrl)
+
+	top_offset = offset_grps[-1]
+	cmds.parent(top_offset, fk_root)
+	cmds.delete(temp_container)
+
+	return fk_root + '|' + top_offset.split('|')[-1]
 
 def find_joint_in_dup(dup_root, joint_name):
 	all_joints = cmds.listRelatives(dup_root, ad=True, type='joint') or []
 	all_joints.append(dup_root)
 	all_joints = cmds.ls(all_joints, l=True)
 	for jnt_path in all_joints:
-		name = jnt_path.split("|")[-1]
-		if joint_name.split("_")[0] in name and 'tip' not in name:
+		name = jnt_path.split("|")[-1].split("_")[0]
+		if joint_name.split("_")[0] == name and 'tip' not in jnt_path:
 			return jnt_path
 	return None
+
+def _wire_ik_fk_visibility(root, switch_ctrl, switch_attr, ik_nodes, fk_nodes, threshold=0.5):
+	fk_cond = cmds.shadingNode("condition", asUtility=True, name=f"{root}_FK_Vis_COND")
+	cmds.setAttr(f"{fk_cond}.operation", 4)
+	cmds.setAttr(f"{fk_cond}.secondTerm", 0.99)
+	cmds.setAttr(f"{fk_cond}.colorIfTrueR", 1)
+	cmds.setAttr(f"{fk_cond}.colorIfFalseR", 0)
+	cmds.connectAttr(f"{switch_ctrl}.{switch_attr}", f"{fk_cond}.firstTerm", f=True)
+
+	ik_cond = cmds.shadingNode("condition", asUtility=True, name=f"{root}_IK_Vis_COND")
+	cmds.setAttr(f"{ik_cond}.operation", 2)
+	cmds.setAttr(f"{ik_cond}.secondTerm", 0.01)
+	cmds.setAttr(f"{ik_cond}.colorIfTrueR", 1)
+	cmds.setAttr(f"{ik_cond}.colorIfFalseR", 0)
+	cmds.connectAttr(f"{switch_ctrl}.{switch_attr}", f"{ik_cond}.firstTerm", f=True)
+
+	invisible_fk_names = ['LeftArm_FKCtrl_offset', 'RightArm_FKCtrl_offset', 'LeftHip_FKCtrl_offset', 'RightHip_FKCtrl_offset']
+	for n_ in invisible_fk_names:
+		n = find_in_group(root.split('_')[0], root + '_' + n_)
+		if cmds.objExists(n):
+			cmds.connectAttr(f"{fk_cond}.outColorR", f"{n}.visibility", f=True)
+	for n_ in ik_nodes:
+		n = find_in_group(root.split('_')[0], n_)
+		if cmds.objExists(n):
+			cmds.connectAttr(f"{ik_cond}.outColorR", f"{n}.visibility", f=True)
 
 def create_ik_fk_switch(base_root, ik_root, fk_root, switch_name="IK_FK_Switch", scale=0.05):
 	base_joints = get_all_joints(base_root)
@@ -287,7 +451,7 @@ def create_ik_fk_switch(base_root, ik_root, fk_root, switch_name="IK_FK_Switch",
 	cmds.xform(switch_offset, ws=True, t=[.4, .6, 0])
 	
 	cmds.addAttr(switch_ctrl, longName=switch_name, attributeType="double",
-				 min=0, max=1, defaultValue=0, keyable=True)
+				 min=0, max=1, defaultValue=1., keyable=True)
 
 	for short_name, base_path in base_dict.items():
 		_, pose_nr = remove_nr(base_root)
@@ -320,10 +484,10 @@ def create_pole_vector_controls(ik_root, ik_handles, parent_group):
 		f"{ik_root}_RightLeg_IKHandle": "RightHip_IK"
 	}
 	handle_mid_joint = {
-		f"{ik_root}_LeftArm_IKHandle":  "LeftForearm_IK",
-		f"{ik_root}_RightArm_IKHandle": "RightForearm_IK",
-		f"{ik_root}_LeftLeg_IKHandle":  "LeftKnee_IK",
-		f"{ik_root}_RightLeg_IKHandle": "RightKnee_IK"
+		f"{ik_root}_LeftArm_IKHandle":  "LeftForearm",
+		f"{ik_root}_RightArm_IKHandle": "RightForearm",
+		f"{ik_root}_LeftLeg_IKHandle":  "LeftKnee",
+		f"{ik_root}_RightLeg_IKHandle": "RightKnee"
 	}
 	handle_end_joint = {
 		f"{ik_root}_LeftArm_IKHandle":  "LeftHand_IK",
@@ -333,9 +497,8 @@ def create_pole_vector_controls(ik_root, ik_handles, parent_group):
 	}
 	for ik_handle in ik_handles:
 		start_joint_path = find_joint_in_dup(ik_root, handle_start_joint.get(ik_handle, None))
-		mid_joint_path = find_joint_in_dup(ik_root, handle_mid_joint.get(ik_handle, None))
+		mid_joint_path = find_joint_in_dup(ik_root.split('_')[0], handle_mid_joint.get(ik_handle, None))
 		end_joint_path = find_joint_in_dup(ik_root, handle_end_joint.get(ik_handle, None))
-
 		pv_locator = cmds.spaceLocator(name=f"{ik_handle}_PV")[0]
 		for axis in ("X","Y","Z"):
 			cmds.setAttr(f"{ik_handle}_PV.localScale{axis}", 0.1)
@@ -344,18 +507,22 @@ def create_pole_vector_controls(ik_root, ik_handles, parent_group):
 		B = om.MVector(cmds.xform(mid_joint_path, q=True, ws=True, t=True))
 		C = om.MVector(cmds.xform(end_joint_path, q=True, ws=True, t=True))
 		
-		CA = (C - A).normalize()
-		T = (B - A) * CA 
-		proj = A + T * CA 
-		D_ = (B - proj).normalize()
-		D_pos = om.MVector(B + .1 * D_)
-
-		pv_position = D_pos if (D_pos - B).length() < (B + D_pos).length() else D_pos * -1
+		diff = C - A
+		halfway_point = A + diff/2
+		if (B - halfway_point).length() > .07:
+			direction = (B - halfway_point).normalize()
+			pv_position = B + direction * .2
+		else:
+			if 'arm' in ik_handle.lower():
+				pv_position = B + om.MVector(0,0,-.15)
+			else:
+				pv_position = B + om.MVector(0,0,.15)
+		
 		cmds.xform(pv_locator, ws=True, t=pv_position)
 		cmds.poleVectorConstraint(pv_locator, ik_handle)		
 		cmds.parent(pv_locator, parent_group)
 
-def setup_full_body_ik_fk(root):
+def setup_full_body_ik_fk(root, total_root, model=False):
 	
 	ik_root = duplicate_and_rename_full_skeleton(root, "_IK")
 	ik_root_long = cmds.ls(ik_root, l=True)[0]
@@ -365,12 +532,12 @@ def setup_full_body_ik_fk(root):
 	fk_root_long = cmds.ls(fk_root, l=True)[0]
 	fk_grp = cmds.group(fk_root_long, name=f"{root}_FK_Skel_Grp")
 
-	ik_handles, ik_ctrls = create_limb_ik_handles(ik_grp)
+	ik_handles, ik_ctrls = create_limb_ik_handles(ik_grp, model=model)
 	if ik_handles:
 		ik_handles_grp = cmds.group(ik_handles + ik_ctrls, name=f"{root}_IK_Handles_Grp")
 		cmds.parent(ik_handles_grp, ik_grp)
 
-	offset_grp_fk = create_fk_controls(fk_root)
+	offset_grp_fk = create_fk_controls(fk_root, model=model)
 	cmds.parent(offset_grp_fk, fk_grp)
 
 	create_pole_vector_controls(ik_grp, ik_handles, ik_grp)
@@ -385,14 +552,22 @@ def setup_full_body_ik_fk(root):
 	cmds.parent(ik_grp, fk_grp, rig_master_grp)
 	cmds.parent(rig_master_grp, root)
 
-	mc = create_master_control(root)
+	mc = create_master_control(root, total_root)
 
-	hip_ctrl, hip_offset = create_hip_control(root)
-	if hip_ctrl:
-		cmds.parent(hip_offset, mc)
-		cmds.parent(root, hip_ctrl)
-		if cmds.objExists(rig_master_grp):
-			cmds.parent(rig_master_grp, hip_ctrl)
+	ik_vis_nodes = []
+	if ik_handles_grp and cmds.objExists(ik_handles_grp):
+		ik_vis_nodes.append(ik_handles_grp) 
+	fk_vis_nodes = [offset_grp_fk] 
+
+
+	_wire_ik_fk_visibility(
+		root,
+		controls_grp,
+		f"{root}_IK_FK_Switch", 
+		ik_vis_nodes,
+		fk_vis_nodes,
+		threshold=0.5
+	)
 
 	cmds.select(clear=True)
 	
@@ -412,10 +587,6 @@ def find_anym_armatures(bones=["Hips", "Hand_L_tip"]):
 		return list(unique_groups)
 
 def format_pose(pose_data) -> None:
-	"""
-	format pose data
-	:param pose_data: string containing the .bvh data
-	"""
 	header = """HIERARCHY
 ROOT Hips
 {
@@ -559,7 +730,156 @@ MOTION
 
 	return data
 
-def import_animation(data, name, scale=.01, set_ik=False, is_pose=False) -> None:
+def import_fbx(namespace):
+	if not cmds.pluginInfo("fbxmaya", q=True, loaded=True):
+		cmds.loadPlugin("fbxmaya")
+
+	if not cmds.namespace(exists=namespace):
+		cmds.namespace(add=namespace)
+
+	kwargs = dict(
+		i=True,
+		type="FBX",
+		ignoreVersion=True,
+		rnn=True,            
+		options="fbx",
+		pr=True,
+		ns=namespace,
+		mergeNamespacesOnClash=False, 
+	)
+
+	new_nodes = cmds.file(MODEL_PATH, **kwargs) 
+	ch36_list = cmds.ls(f"{namespace}:Ch36", l=True, type="transform") or []
+	arm_list  = cmds.ls(f"{namespace}:Armature", l=True, type="transform") or []
+
+	if not ch36_list or not arm_list:
+		new_nodes_long = cmds.ls(new_nodes, l=True) or []
+		for n in new_nodes_long:
+			short = n.split("|")[-1]
+			short_no_ns = short.split(":")[-1]
+			if short_no_ns == "Ch36" and not ch36_list:
+				ch36_list = [n]
+			elif short_no_ns == "Armature" and not arm_list:
+				arm_list = [n]
+
+	ch36 = ch36_list[0]
+	armature = arm_list[0]
+
+	for axis in ("x","y","z"):
+		cmds.setAttr(f"{armature}.s{axis}", 0.0095)
+	cmds.setAttr(f"{armature}.ry", -90.0)
+
+	hips = find_in_group(armature, "mixamorig1:Hips")
+	if hips:
+		cmds.setAttr(f"{hips}.tx", 0.0)
+		cmds.setAttr(f"{hips}.ty", 0.0)
+		cmds.setAttr(f"{hips}.tz", 0.0)
+
+	ch36 = cmds.rename(ch36, f'{namespace}Mesh')
+	armature = cmds.rename(armature, f'{namespace}Arm')
+
+	children = cmds.listRelatives(armature, ad=True, type='transform', f=True) or []
+	children.sort()
+	for child in children:
+		cmds.rename(child.split('|')[-1], namespace + '_' + child.split(':')[-1])
+
+	return ch36, armature
+
+def find_in_group(root, name):
+	root_paths = cmds.ls(root, l=True) or []
+	if not root_paths:
+		return None
+	root_path = root_paths[0]
+
+	candidates = set()
+	for q in (name, "*:"+name):
+		hits = cmds.ls(q, l=True) or []
+		for h in hits:
+			candidates.add(h)
+
+	def under_root(p):
+		return p == root_path or p.startswith(root_path + "|")
+
+	matches = [p for p in candidates if under_root(p)]
+
+	if not matches:
+		desc = cmds.listRelatives(root_path, ad=True, pa=True) or []
+		pool = [root_path] + desc
+		matches = [p for p in pool if p.split("|")[-1].split(":")[-1] == name]
+
+	if not matches:
+		return None
+
+	matches.sort(key=lambda p: p.count("|"))
+	return matches[0]
+
+def constrain_model(source_root, target_armature, maintain_offset=True):
+	constraints = []
+	bone_mapping = {
+		"Hips": f"{source_root[:-5]}_Hips",
+		"Spine": f"{source_root[:-5]}_Spine",
+		"Spine1": f"{source_root[:-5]}_Spine1",
+		"Spine2": f"{source_root[:-5]}_Spine2",
+		"Neck": f"{source_root[:-5]}_Neck",
+		"Head": f"{source_root[:-5]}_Head",
+		"LeftShoulder": f"{source_root[:-5]}_LeftShoulder",
+		"LeftArm": f"{source_root[:-5]}_LeftArm",
+		"LeftForearm": f"{source_root[:-5]}_LeftForeArm",
+		"LeftHand": f"{source_root[:-5]}_LeftHand",
+		"RightShoulder": f"{source_root[:-5]}_RightShoulder",
+		"RightArm": f"{source_root[:-5]}_RightArm",
+		"RightForearm": f"{source_root[:-5]}_RightForeArm",
+		"RightHand": f"{source_root[:-5]}_RightHand",
+		"LeftHip": f"{source_root[:-5]}_LeftUpLeg",
+		"LeftKnee": f"{source_root[:-5]}_LeftLeg",
+		"LeftFoot": f"{source_root[:-5]}_LeftFoot",
+		"LeftToe": f"{source_root[:-5]}_LeftToeBase",
+		"RightHip": f"{source_root[:-5]}_RightUpLeg",
+		"RightKnee": f"{source_root[:-5]}_RightLeg",
+		"RightFoot": f"{source_root[:-5]}_RightFoot",
+		"RightToe": f"{source_root[:-5]}_RightToeBase",
+	}
+
+	target_root = target_armature
+
+	for source_bone_name, target_bone_name in bone_mapping.items():
+		try:
+			source_jnt = find_in_group(source_root, source_bone_name)
+			target_jnt = find_in_group(target_root, target_bone_name)
+			oc = cmds.orientConstraint(source_jnt, target_jnt, mo=maintain_offset)[0]
+		except:
+			import pdb; pdb.set_trace()
+		constraints.append(oc)
+
+		if source_bone_name == "Hips":
+			pc = cmds.pointConstraint(source_jnt, target_jnt, mo=maintain_offset)[0]
+			constraints.append(pc)
+
+def lock_trs_on_children(root):
+	ik_joints = [
+		'LeftShoulder', 'LeftArm', 'LeftForearm',
+		'RightShoulder', 'RightArm', 'RightForearm',
+		'LeftHip', 'LeftKnee', 'LeftFoot', 
+		'RightHip', 'RightKnee', 'RightFoot', 
+	]
+	descendants = cmds.listRelatives(root, ad=True, type='transform', f=True) or []
+
+	for node in descendants:
+		if '_IK' in node:
+			name = (node.split('|')[-1]).split('_')[0]
+			if name in ik_joints:
+				continue
+
+		for prefix in ('t', 'r', 's'):  
+			for axis in ('x', 'y', 'z'):
+				attr = f"{node}.{prefix}{axis}"
+				try:
+					cmds.setAttr(attr, lock=True, keyable=False) 
+					cmds.setAttr(attr, channelBox=False)
+				except Exception:
+					pass
+
+def import_animation(data, name, scale=.01, set_ik=False, is_pose=False, import_model=False) -> None:		
 
 	class ArmatureBone:
 		def __init__(self, name, parent=None):
@@ -576,7 +896,7 @@ def import_animation(data, name, scale=.01, set_ik=False, is_pose=False) -> None
 		group_name = base_name
 		i = 1
 		while cmds.objExists(group_name):
-			group_name = f"{base_name}_{i:03d}"
+			group_name = f"{base_name}{i:03d}"
 			i += 1
 		return group_name
 
@@ -604,6 +924,7 @@ def import_animation(data, name, scale=.01, set_ik=False, is_pose=False) -> None
 	channels = []
 	frame = 1
 	rot_order = 0 # XYZ
+	pose_data = []
 
 	lines = data.splitlines()
 	group_name = create_unique_group_name(name)
@@ -682,16 +1003,55 @@ def import_animation(data, name, scale=.01, set_ik=False, is_pose=False) -> None
 					time_v = int((frame - 1) * fps_r)
 					for index, value in enumerate(data):
 						if is_pose:
-							cmds.setAttr(channels[index], value)
+							if import_model:
+								pose_data.append((channels, index, value))
+							else:
+								cmds.setAttr(channels[index], value)
 						else:
 							cmds.setKeyframe(channels[index], time=time_v, value=value)
 				frame += 1
 	
 	cmds.setAttr(f"{group}.rotateX", -90)
+	if is_pose:
+		total_group = cmds.group(em=True, name=group_name[:-5])
+		cmds.parent(group, total_group)
+
+	if import_model:
+		ns = group_name.replace("|", "_").replace("-", "_")
+		if ns.endswith("_Main"):
+			ns = ns[:-5] 
+
+		ch36, armature = import_fbx(namespace=ns)
+		constrain_model(group, armature) 
+
+		cmds.parent(ch36, total_group)
+		cmds.parent(armature, total_group)
+		cmds.setAttr(f"{armature}.visibility", False, lock=True)
+		cmds.setAttr(f"{ch36}.inheritsTransform", False)
+
+		for attr in ['sx','sy','sz','rx','ry','rz','tx','ty','tz']:
+			cmds.setAttr(f"{armature}.{attr}", lock=True, keyable=False)
+			cmds.setAttr(f"{ch36}.{attr}", lock=True, keyable=False)
+
+		for channels, index, value in pose_data:
+			cmds.setAttr(total_group + '|' + channels[index], value)
 
 	if set_ik:
 		cmds.refresh(force=True)
-		setup_full_body_ik_fk(group)
+		setup_full_body_ik_fk(group, total_group, model=import_model)
+		hips_main = find_in_group(find_in_group(total_group, group), 'Hips')
+		hips_ik   = find_in_group(total_group, f'{group}_IK')
+		hips_fk   = find_in_group(total_group, f'{group}_FK')
+		if import_model and hips_main:
+			cmds.setAttr(hips_main + '.visibility', False, lock=True)
+		if hips_ik:
+			cmds.setAttr(hips_ik + '.visibility', False, lock=True)
+		if hips_fk:
+			cmds.setAttr(hips_fk + '.visibility', False, lock=True)
+
+		lock_trs_on_children(hips_main)
+		lock_trs_on_children(hips_ik)
+		lock_trs_on_children(hips_fk)
 
 def get_joint_hierarchy(joint):
 		children = cmds.listRelatives(joint, type="joint", children=True, fullPath=True) or []
@@ -721,8 +1081,6 @@ def get_keyframe_indices(armature_name):
 	switch_ctrl = cmds.ls(f"{armature_name}_IKFK_Switch_Ctrl", type="transform")
 	all_rig_nodes.extend(switch_ctrl)
 	master_ctrl = cmds.ls(f"{armature_name}_Master_Ctrl", type="transform")
-	all_rig_nodes.extend(master_ctrl)
-	master_ctrl = cmds.ls(f"{armature_name}_Hip_Ctrl", type="transform")
 	all_rig_nodes.extend(master_ctrl)
 	
 	for node in all_rig_nodes:
@@ -758,8 +1116,7 @@ def get_bone_rotations(armature_name, frame=1):
 				
 				rotation_main = cmds.getAttr(f"{armature_name[:-5]}.rotate")[0]
 				rotation_mc = cmds.getAttr(f"{armature_name}_Master_Ctrl.rotate")[0]
-				rotation_hips = cmds.getAttr(f"{armature_name}_Hip_Ctrl.rotate")[0]
-				rotation_orig[2] += rotation_mc[1] + rotation_main[1] + rotation_hips[1]
+				rotation_orig[2] += rotation_mc[1] + rotation_main[1]
 			
 			rotation = [rotation_orig[2], rotation_orig[1], rotation_orig[0]]
 			rotations.append(rotation)
@@ -851,7 +1208,7 @@ class AnymTool:
 		if cmds.window(self.window_name, exists=True):
 			cmds.deleteUI(self.window_name)
 
-		cmds.window(self.window_name, title="ANYM v1.0", width=340, height=850)
+		cmds.window(self.window_name, title="ANYM v1.0", width=340, height=1000)
 
 		main_layout = cmds.columnLayout(adjustableColumn=True, rowSpacing=5, columnAttach=('both', 5))
 
@@ -874,9 +1231,17 @@ class AnymTool:
 		cmds.columnLayout(adjustableColumn=True, rowSpacing=5)
 
 		cmds.rowLayout(numberOfColumns=2, columnWidth2=[10, 50], adjustableColumn=1)
-		self.selected_pose = cmds.optionMenuGrp(label="Available Pose", columnWidth=[(1, 80), (2, 220)])
-		self.fkik_checkbox = cmds.checkBox(label="Create FK/IK", value=True)
+		self.selected_pose = cmds.optionMenuGrp(label="Available Pose", columnWidth=[(1, 75), (2, 220)])
 		cmds.setParent('..')
+
+		cmds.rowLayout(numberOfColumns=4, adjustableColumn=4, columnWidth4=(100, 50, 100, 50), columnAlign4=('left', 'left', 'right', 'left'))
+		cmds.text(label="Create FK/IK   ", align='left')
+		self.fkik_checkbox = cmds.checkBox(label="", value=True)
+
+		cmds.text(label="Import Model   ", align='left')
+		self.import_model_checkbox = cmds.checkBox(label="", value=True)
+		cmds.setParent('..') 
+
 		poses = start_poses.keys()
 		for pose in poses:
 			cmds.menuItem(label=pose)
@@ -898,7 +1263,7 @@ class AnymTool:
 			backgroundColor=[0.3, 0.3, 0.3]
 		)
 
-		self.poses_layout = cmds.scrollLayout(height=150, backgroundColor=[0.25, 0.25, 0.25])
+		self.poses_layout = cmds.scrollLayout(height=130, backgroundColor=[0.25, 0.25, 0.25])
 		cmds.columnLayout(adjustableColumn=True, rowSpacing=2)
 		cmds.setParent('..') 
 		cmds.setParent('..') 
@@ -954,7 +1319,6 @@ class AnymTool:
 
 		cmds.separator(height=5, style='none')
 
-		# API key
 		stored_api_key = get_api_key()
 		self.api_key_field = cmds.textFieldGrp(
 			label="API Key",
@@ -985,9 +1349,10 @@ class AnymTool:
 	def import_armature(self, *kwargs):
 		pose_name = cmds.optionMenuGrp(self.selected_pose, query=True, value=True)
 		create_fkik = cmds.checkBox(self.fkik_checkbox, query=True, value=True)
+		import_model = cmds.checkBox(self.import_model_checkbox, query=True, value=True)
 		pose_data = start_poses[pose_name]
 		if pose_name != "--select armature--":
-			import_animation(format_pose(pose_data), pose_name, set_ik=create_fkik, is_pose=True)
+			import_animation(format_pose(pose_data), pose_name, set_ik=create_fkik, is_pose=True, import_model=import_model)
 
 	def set_max_frames(self, *kwargs):
 		all_indices = []
@@ -1122,9 +1487,6 @@ class AnymTool:
 		return True
 
 	def show_error_window(self, message):
-		"""
-		display error window
-		"""
 		cmds.confirmDialog(
 			title="Invalid ANYM request",
 			message=message,
@@ -1164,9 +1526,6 @@ class AnymTool:
 				self.show_error_window(message=f"Error {status_code}: {output['message']}")
 
 	def exported_anim_listener(self):
-		"""
-		listens for queued animation imports and imports them into scene
-		"""
 		try:
 			api_key = cmds.textFieldGrp(self.api_key_field, query=True, text=True).strip()
 
@@ -1182,9 +1541,6 @@ class AnymTool:
 			self.show_error_window(message=f"Error importing ANYM animation.")
 
 	def __del__(self):
-		"""
-		stop running processes on exit
-		"""
 		if hasattr(self, 'create_job'):
 			cmds.scriptJob(kill=self.create_job, force=True)
 		if hasattr(self, 'delete_job'):
