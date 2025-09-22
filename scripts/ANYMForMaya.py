@@ -1480,7 +1480,7 @@ class AnymTool:
 			self.show_error_window("Warning: All keyframes need to fall within total animation duration.")
 			return False
 
-		if max(indices_diff) >= 5 * fps:
+		if max(indices_diff) > 5 * fps:
 			self.show_error_window(f"Warning: Keyframes can be spaced up to 5 seconds apart, currently spaced {max(indices_diff) / fps:.1f} seconds apart.")
 			return False
 
