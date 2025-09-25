@@ -6,7 +6,11 @@ This repo contains a Maya plugin for using the Anym engine.
 
 ### API Key
 
-To use this plugin, you'll need an Anym API key. Contact **hello@anym.tech** to request access.
+To use this plugin, you'll need an Anym API key. To get one;
+- Make an account on [app.anym.tech/signup](https://app.anym.tech/signup/) and verify your e-mail address
+- In the dashboard, click on **Create Company**, fill in a name and click the Confirm button
+- Scroll to the bottom of the page and click **Create new API Key**
+- Next to the new key, click **Copy Key** to copy your key to your clipboard
 
 ### Installation
 
@@ -21,7 +25,7 @@ The plugin will now open, and be available in the top bar of your Maya interface
 
 ### Video Tutorial
 
-For a visual guide on using the plugin, check out our [Maya plugin tutorial](https://youtu.be/RM0xSEwWNg8?feature=shared) which demonstrates the total workflow for obtaining a first animation.
+For a visual guide on using the plugin, check out our [Maya plugin tutorial](https://youtu.be/KjY4Qi8uCyQ?feature=shared) which demonstrates the total workflow for obtaining a first animation.
 
 ### Step-by-Step Workflow
 
