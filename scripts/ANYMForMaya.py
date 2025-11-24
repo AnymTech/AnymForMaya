@@ -581,7 +581,7 @@ def find_anym_armatures(bones=["Hips", "Hand_L_tip"]):
 
 					group_name = obj.split('|', 1)[0]
 
-					if len(get_joint_hierarchy(group_name)) == 28:
+					if len(get_joint_hierarchy(group_name)) == 28 and 'ANYM_output' not in group_name:
 						unique_groups.add(group_name)
 
 		return list(unique_groups)
@@ -1186,6 +1186,7 @@ def api_request(data, api_key, url):
 
 	headers = {
 		'X-API-KEY': f'{api_key}',
+		'X-Plugin-Token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwbHVnaW5fdmVyc2lvbl9pZCI6IjIzNDAxODcyLTE5NWEtNDgxNC05MGI4LTViN2M3ZWYwMjgyMCJ9.ZcE_uIi9S6gXyqaaHXhYmftbDqEEC0soyHMqWDEgVak',
 		'Content-Type': 'application/json'
 	}
 
@@ -1529,9 +1530,13 @@ class AnymTool:
 		try:
 			api_key = cmds.textFieldGrp(self.api_key_field, query=True, text=True).strip()
 
-			response = requests.get(
-				f'{self.url}import-animation?X-API-KEY={api_key}'
-			)
+			headers = {
+				'X-API-KEY': f'{api_key}',
+				'X-Plugin-Token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwbHVnaW5fdmVyc2lvbl9pZCI6IjIzNDAxODcyLTE5NWEtNDgxNC05MGI4LTViN2M3ZWYwMjgyMCJ9.ZcE_uIi9S6gXyqaaHXhYmftbDqEEC0soyHMqWDEgVak',
+				'Content-Type': 'application/json'
+			}
+
+			response = requests.get(f'{self.url}api/import-animation/', headers=headers)
 			
 			if response.status_code == 200:
 				import_animation(
