@@ -879,7 +879,7 @@ def lock_trs_on_children(root):
 				except Exception:
 					pass
 
-def import_animation(data, name, scale=.01, set_ik=False, is_pose=False, import_model=False) -> None:		
+def import_animation(data, name, scale=.01, set_ik=False, is_pose=False, import_model=False, keyframe_indices=None) -> None:		
 
 	class ArmatureBone:
 		def __init__(self, name, parent=None):
@@ -997,7 +997,7 @@ def import_animation(data, name, scale=.01, set_ik=False, is_pose=False, import_
 					fps_r = outp_fps / scene_fps
 				continue
 			else:
-				if frame != 0:
+				if frame != 0 and (not keyframe_indices or frame in keyframe_indices):
 					data = list(map(float, space_re.split(line)))
 					data[:3] = [x * 100 for x in data[:3]]
 					time_v = int((frame - 1) * fps_r)
@@ -1534,7 +1534,13 @@ class AnymTool:
 			)
 			
 			if response.status_code == 200:
-				import_animation(response.json()['data'], "ANYM_output")
+				import_animation(
+					data=response.json()['data']['animation'], 
+					name="ANYM_output",
+					keyframe_indices=response.json()['data']['keyframe_indices']
+				)
+			elif response.status_code == 404:
+				self.show_error_window(message=f"Error {response.status_code}: No fetchable animation found. First click 'Generate Animation', then unlock it in the Anym previewer.")
 			else:
 				self.show_error_window(message=f"Error {response.status_code}: {response.json()['message']}")
 		except:
