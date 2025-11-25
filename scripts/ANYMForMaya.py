@@ -1182,7 +1182,7 @@ def format_request(poses, is_looping, solve_ik, n_frames, fps):
 
 def api_request(data, api_key, url):
 		
-	url = f'{url}predict/'
+	url = f'{url}/predict/'
 
 	headers = {
 		'X-API-KEY': f'{api_key}',
@@ -1197,7 +1197,7 @@ def api_request(data, api_key, url):
 class AnymTool:
 	def __init__(self):
 		self.icon_path = ICONS_DIR
-		self.url = 'https://app.anym.tech/api/'
+		self.url = 'https://app.anym.tech/'
 		self.tot_frames = 40
 		self.window_name = "AnymToolWindow"
 		self.poses = []
@@ -1514,13 +1514,13 @@ class AnymTool:
 				fps
 			)
 
-			status_code, output = api_request(data, api_key, self.url)
+			status_code, output = api_request(data, api_key, f'{self.url}api')
 
 			if status_code == 200:
 				anim_id = output['data']['animation_id']
 
 				webbrowser.open(
-					f'{self.url}preview?X-API-KEY={api_key}&animation-id={anim_id}', new=0
+					f'{self.url}preview/{anim_id}/', new=0
 				)
 
 			else:
