@@ -25,7 +25,7 @@ The plugin will now open, and be available in the top bar of your Maya interface
 
 ### Video Tutorial
 
-For a visual guide on using the plugin, check out our [Maya plugin tutorial]([https://youtu.be/KjY4Qi8uCyQ?feature=shared](https://youtu.be/CJgg9eiLYN4?si=5D8DPh1sdu_H0jo4) which demonstrates the total workflow for obtaining a first animation.
+For a visual guide on using the plugin, check out our [Maya plugin tutorial](https://www.youtube.com/watch?v=CJgg9eiLYN4) which demonstrates the total workflow for obtaining a first animation.
 
 ### Step-by-Step Workflow
 
